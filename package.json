@@ -1,0 +1,26 @@
+{
+  "name": "content-discovery",
+  "version": "1.0.0",
+  "description": "A content discoverer for reflex-server",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ReflexHub/content-discovery.git"
+  },
+  "keywords": [
+    "content",
+    "discovery",
+    "reflex",
+    "media",
+    "server"
+  ],
+  "author": "Amish Shah <amishshah.2k@gmail.com>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/ReflexHub/content-discovery/issues"
+  },
+  "homepage": "https://github.com/ReflexHub/content-discovery#readme"
+}
