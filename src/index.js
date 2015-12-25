@@ -11,7 +11,7 @@ const Errors = {
 	PAUSED: new Error("The scanner has been paused!")
 };
 
-class ContentFinder extends EventEmitter{
+class ContentFinder extends EventEmitter {
 
 	constructor(options) {
 
@@ -19,18 +19,15 @@ class ContentFinder extends EventEmitter{
 
 		options = options || {};
 
-		options.location = options.location || process.cwd();
+		options.locations = options.locations || [process.cwd()];
 		options.validity = options.validity || (() => false);
+		options.watch = options.watch || false;
 
 		this.already_found = options.already_found || [];
 		this.scanning = false;
 		this.paused = false;
 		this.options = options;
-
-		if (this.options.interval)
-			// can't just use this.search because the context
-			// messes up
-			setTimeout(() => this.search(), this.options.interval);
+		this.search();
 
 	}
 
@@ -46,7 +43,7 @@ class ContentFinder extends EventEmitter{
 	search() {
 		return new Promise((resolve, reject) => {
 
-			if (!this.options.location)
+			if (!this.options.locations)
 				throw Errors.NO_LOCATION;
 
 
@@ -59,7 +56,29 @@ class ContentFinder extends EventEmitter{
 
 			this.scanning = true;
 
-			let dir = this.options.location;
+			let found = [], promises = [];
+
+			for(let dir of this.options.locations){
+				promises.push(this.walk_indiv(dir));
+			}
+
+			Promise.all(promises).then(arrays => {
+				//console.log(v);
+				let orig_array = [];
+				for(let array of arrays){
+					orig_array = orig_array.concat(array.filter(i => orig_array.indexOf(i) < 0));
+				}
+				resolve(this.check_differences(orig_array));
+				this.scanning = false;
+				if(this.options.interval)
+					setTimeout(() => this.search(), this.options.interval);
+			});
+		});
+	}
+
+	walk_indiv(dir) {
+		return new Promise((resolve, reject) => {
+
 			let found = [];
 
 			fs.walk(dir)
@@ -68,21 +87,14 @@ class ContentFinder extends EventEmitter{
 						found.push(item.path);
 					}
 				})
-				.on("error", e => { })
+				.on("error", e => {})
 				.on("end", () => {
-					this.scanning = false;
-
-					resolve(this.check_differences(found));
-
-					if (this.options.interval)
-						// can't just use this.search because the context
-						// messes up
-						setTimeout(() => this.search(), this.options.interval);
-				})
-		});
+					resolve(found);
+				});
+		})
 	}
 
-	check_differences(new_array){
+	check_differences(new_array) {
 
 		/*	to find additions, subtract the elements from the old array from
 			the new array, the resulting array is the additions.
@@ -96,26 +108,26 @@ class ContentFinder extends EventEmitter{
 		let old_array = this.already_found;
 
 		// ADDITIONS
-		for(let item of new_array){
+		for (let item of new_array) {
 			let ind = old_array.indexOf(item);
-			if(!~ind)
+			if (!~ind)
 				additions.push(item);
 		}
 
 		// DELETIONS
-		for(let item of old_array){
+		for (let item of old_array) {
 			let ind = new_array.indexOf(item);
-			if(!~ind)
+			if (!~ind)
 				deletions.push(item);
 		}
 
 		this.already_found = new_array;
 
-		if(additions.length + deletions.length > 0){
+		if (additions.length + deletions.length > 0) {
 			this.emit("change", additions, deletions, new_array);
 		}
 
-		return ({additions, deletions});
+		return ({ additions, deletions });
 
 	}
 

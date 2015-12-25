@@ -1,6 +1,7 @@
 const ContentFinder = require("../");
 const finder = new ContentFinder({
 	interval : 5000,
+	watch : true,
 	validity : item => {
 		return true
 	}
